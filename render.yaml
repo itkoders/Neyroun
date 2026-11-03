@@ -1,0 +1,45 @@
+databases:
+  - name: neuron-db
+    databaseName: neuron
+    plan: free
+    region: singapore
+
+services:
+  - type: web
+    name: neuron-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm install
+    preDeployCommand: npm run migrate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    initialDeployHook: npm run seed
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neuron-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_TTL
+        value: 12h
+      - key: WEBAPP_ORIGIN
+        value: https://neuron-web.onrender.com
+      - key: WEBAPP_URL
+        value: https://neuron-web.onrender.com
+      - key: ADMIN_LOGIN
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: neuron-web
+    runtime: static
+    rootDir: webapp
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://neuron-api.onrender.com/api

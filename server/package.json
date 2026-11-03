@@ -7,16 +7,17 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "migrate": "node src/migrate.js"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
     "grammy": "^1.30.0",
-    "@resvg/resvg-js": "^2.6.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5"
   }
