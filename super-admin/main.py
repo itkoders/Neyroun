@@ -161,7 +161,7 @@ def dashboard_html(request: Request, user: User, db: Session):
 <main class="main"><header class="top" id="umumiy"><div><div class="eyebrow">MARKAZIY BOSHQARUV · ITKODERS</div><h1>Salom, {user.username} 👋</h1><div class="sub">Barcha loyihalaringiz holati bitta joyda.</div></div><div class="topright"><span class="who">{user.role.upper()} · Xavfsiz sessiya</span><form method="post" action="/logout"><button class="logout">Chiqish ↗</button></form></div></header>
 <div class="grid"><div class="stat"><div class="statlabel">Ro‘yxatdagi loyihalar</div><div class="statnum">{len(projects)}</div><div class="statfoot">Markazga ulangan</div></div><div class="stat"><div class="statlabel">Jamoa a’zolari</div><div class="statnum">{len(users)}</div><div class="statfoot">Boshqaruv huquqlari</div></div><div class="stat"><div class="statlabel">Audit hodisalari</div><div class="statnum">{db.query(Audit).count()}</div><div class="statfoot">Amallar tarixi</div></div><div class="stat"><div class="statlabel">Faol loyihalar</div><div class="statnum">{sum(1 for p in projects if p.active)}</div><div class="statfoot">Nazoratdagi xizmatlar</div></div></div>
 <div class="notice">✦ <b>Yagona boshqaruv.</b> Yangi loyiha qo‘shish uchun «Loyiha ulash» tugmasidan foydalaning. Har bir loyiha alohida API orqali ulanadi.</div>
-<section class="section" id="loyihalar"><div class="sectionhead"><div><h2>Loyihalar markazi</h2><p>Saytlar, botlar, ilovalar va API xizmatlari.</p></div><button class="btn" onclick="document.getElementById('addmodal').classList.add('open')">＋ Loyiha ulash</button></div>
+<section class="section" id="loyihalar"><div class="sectionhead"><div><h2>Loyihalar markazi</h2><p>Saytlar, botlar, ilovalar va API xizmatlari.</p></div><div class="actions"><button class="btn secondary" onclick="importRender()">Renderdan yuklash ↻</button><button class="btn" onclick="document.getElementById('addmodal').classList.add('open')">＋ Loyiha ulash</button></div></div>
 <div class="cards">{''.join(f'''<article class="project"><div class="projecttop"><div><div class="projectname">{esc(p.name)}</div><div class="kind">{esc(p.kind.upper())} · ID #{p.id}</div></div><span class="status {' ' if p.active else 'off'}">{'FAOL' if p.active else 'PAUZA'}</span></div><div class="projectmeta">GitHub: {esc(p.repo_url or 'ulanmagan')}<br>Manzil: {esc(p.service_url or 'kiritilmagan')}<br>Render ID: {esc(p.render_service_id or 'kiritilmagan')}</div><div class="actions"><button class="btn secondary small" onclick="checkProject({p.id},this)">Holatini tekshirish</button><form method="post" action="/projects/{p.id}/toggle"><button class="btn secondary small">{'To‘xtatish' if p.active else 'Faollashtirish'}</button></form>{'<form method="post" action="/projects/'+str(p.id)+'/deploy"><button class="btn small">Yangilash ↗</button></form>' if user.role=='owner' and p.render_service_id else ''}</div></article>''' for p in projects) or '<div class="empty">Hali loyiha ulanmagan. Birinchi loyihangizni qo‘shing.</div>'}</div></section>
 <section class="section" id="serverlar"><div class="sectionhead"><div><h2>Server monitoring</h2><p>Ushbu boshqaruv xizmatining o‘z resurslari.</p></div><button class="btn secondary small" onclick="loadMetrics()">Yangilash</button></div><div class="grid"><div class="card"><div class="statlabel">Protsessor</div><div class="statnum" id="cpu">—</div><div class="statfoot">CPU bandligi</div></div><div class="card"><div class="statlabel">Xotira</div><div class="statnum" id="ram">—</div><div class="statfoot">RAM ishlatilishi</div></div><div class="card"><div class="statlabel">Disk</div><div class="statnum" id="disk">—</div><div class="statfoot">Disk bandligi</div></div><div class="card"><div class="statlabel">Render ulanishi</div><div class="statnum" id="render">—</div><div class="statfoot">API kaliti sozlangan bo‘lsa</div></div></div></section>
 <section class="section" id="jamoa"><div class="sectionhead"><div><h2>Jamoa va huquqlar</h2><p>Har bir xodimga kerakli darajadagi ruxsat bering.</p></div></div><div class="card"><div class="tablewrap"><table><thead><tr><th>Foydalanuvchi</th><th>Daraja</th><th>Holat</th><th>Ro‘yxatdan o‘tgan</th></tr></thead><tbody>{''.join(f'<tr><td>{esc(u.username)}</td><td><span class="pill">{esc(u.role)}</span></td><td>{"Faol" if u.active else "Bloklangan"}</td><td>{u.created_at.strftime("%Y-%m-%d") if u.created_at else "—"}</td></tr>' for u in users)}</tbody></table></div>{'<form class="formgrid" style="margin-top:18px" method="post" action="/team/add"><label>Yangi login<input name="username" required minlength="3"></label><label>Vaqtinchalik parol<input name="password" type="password" required minlength="16"></label><label>Huquq darajasi<select name="role"><option value="admin">Administrator</option><option value="operator">Operator</option><option value="viewer">Kuzatuvchi</option></select></label><div style="display:flex;align-items:end"><button class="btn">＋ Xodim qo‘shish</button></div></form>' if user.role=='owner' else '<p class="hint">Xodim qo‘shish faqat bosh egaga ruxsat etilgan.</p>'}</div></section>
@@ -173,6 +173,7 @@ def dashboard_html(request: Request, user: User, db: Session):
 <div class="modal" id="restoremodal"><div class="modalbox"><div class="modalhead"><h2>Zaxiradan tiklash</h2><button class="x" onclick="closeModal('restoremodal')">✕</button></div><p class="sub">Bu amal mavjud loyiha ro‘yxatini tanlangan zaxira bilan almashtiradi. Avval hozirgi holatni yuklab oling.</p><form method="post" action="/restore" enctype="multipart/form-data" onsubmit="return confirm('Haqiqatan tiklaysizmi? Mavjud loyiha ro‘yxati almashtiriladi.')"><label>Zaxira JSON fayli<input type="file" name="backup" accept="application/json" required></label><button class="btn" style="margin-top:14px">Tiklashni tasdiqlash</button></form></div></div>
 <script>
 async function checkProject(id,btn){{let old=btn.textContent;btn.disabled=true;btn.textContent='Tekshirilmoqda…';try{{let r=await fetch('/projects/'+id+'/health');let d=await r.json();alert('Holat: '+(d.status||d.detail||'noma’lum')+(d.http_status?' · HTTP '+d.http_status:''));}}catch(e){{alert('Tekshiruv amalga oshmadi')}}finally{{btn.disabled=false;btn.textContent=old}}}}
+async function importRender(){{if(!confirm("Renderdagi xizmatlarni markazga qo‘shamizmi?"))return;try{{let r=await fetch("/api/render/import",{{method:"POST"}});let d=await r.json();if(!r.ok)throw Error(d.detail||"Ulanmadi");alert(d.added+" ta yangi xizmat qo‘shildi.");location.reload();}}catch(e){{alert(e.message)}}}}
 async function loadMetrics(){{try{{let r=await fetch('/api/metrics');if(!r.ok)throw Error();let d=await r.json();document.getElementById('cpu').textContent=d.cpu+'%';document.getElementById('ram').textContent=d.ram+'%';document.getElementById('disk').textContent=d.disk+'%';document.getElementById('render').textContent=d.render_api?'ULANGAN':'SOZLANMAGAN';}}catch(e){{}}}}
 function closeModal(id){{document.getElementById(id).classList.remove('open')}}
 loadMetrics();setInterval(loadMetrics,30000);
@@ -280,6 +281,33 @@ def team_add(request: Request, username: str = Form(...), password: str = Form(.
     db.add(User(username=username.strip(), password_hash=hash_password(password), role=role))
     db.commit(); audit(db, user.username, "jamoa_azosi_qoshildi", f"{username} / {role}", request)
     return RedirectResponse("/#jamoa", status_code=303)
+
+@app.post("/api/render/import")
+async def import_render(request: Request, user: User = Depends(role_dep("owner", "admin")), db: Session = Depends(db_dep)):
+    verify_origin(request)
+    key = os.getenv("RENDER_API_KEY", "")
+    if not key: raise HTTPException(400, "Render API kaliti sozlanmagan")
+    async with httpx.AsyncClient(timeout=25) as client:
+        r = await client.get("https://api.render.com/v1/services?limit=100",
+            headers={"Authorization": f"Bearer {key}"})
+    if r.status_code >= 300: raise HTTPException(502, "Render xizmatlari ro‘yxatini olish imkonsiz")
+    payload = r.json()
+    added = 0
+    items = payload if isinstance(payload, list) else payload.get("items", [])
+    for item in items:
+        svc = item.get("service", item) if isinstance(item, dict) else {}
+        sid = str(svc.get("id", ""))
+        if not sid or db.query(Project).filter_by(render_service_id=sid).first(): continue
+        details = svc.get("serviceDetails") or {}
+        name = str(svc.get("name") or "Render xizmati")
+        url = str(details.get("url") or svc.get("url") or "")
+        repo = str(svc.get("repo") or "")
+        kind = str(svc.get("type") or "web").lower()
+        db.add(Project(name=name, kind=kind[:40], repo_url=repo[:500], service_url=url[:500], render_service_id=sid))
+        added += 1
+    db.commit()
+    audit(db, user.username, "render_xizmatlari_import", f"{added} ta xizmat qo‘shildi", request)
+    return {"ok": True, "added": added}
 
 @app.get("/api/metrics")
 def metrics(user: User = Depends(user_dep)):
