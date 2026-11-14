@@ -145,8 +145,15 @@ def bootstrap():
         raise RuntimeError("BOOTSTRAP_ADMIN_PASSWORD kamida 16 belgidan iborat bo‘lsin")
     db = SessionLocal()
     try:
-        if not db.query(User).filter_by(username=username).first():
+        bootstrap_user = db.query(User).filter_by(username=username).first()
+        if not bootstrap_user:
             db.add(User(username=username, password_hash=hash_password(password), role="owner"))
+            db.commit()
+        elif bootstrap_user.role != "owner":
+            # The configured bootstrap account is the sole Super Admin owner.
+            # Promote an existing account so the owner-only team controls appear.
+            bootstrap_user.role = "owner"
+            bootstrap_user.permissions = "{}"
             db.commit()
         # Import existing Render services/repositories as starter inventory only once.
         if db.query(Project).count() == 0:
