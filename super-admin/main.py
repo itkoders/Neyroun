@@ -31,6 +31,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(24), default="viewer")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    permissions: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 class Project(Base):
     __tablename__ = "sa_projects"
@@ -53,6 +54,8 @@ class Audit(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 Base.metadata.create_all(engine)
+with engine.begin() as conn:
+    conn.exec_driver_sql("ALTER TABLE sa_users ADD COLUMN IF NOT EXISTS permissions TEXT NOT NULL DEFAULT '{}' ")
 app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None)
 app.add_middleware(SessionMiddleware, secret_key=SECRET, session_cookie="itkoders_sa", max_age=28800,
                    same_site="strict", https_only=COOKIE_SECURE)
@@ -90,6 +93,43 @@ def user_dep(request: Request, db: Session = Depends(db_dep)):
 def role_dep(*roles):
     def check(user: User = Depends(user_dep)):
         if user.role not in roles: raise HTTPException(403, "Bu amal uchun huquqingiz yo‘q")
+        return user
+    return check
+
+PERMISSION_LABELS = {
+    "dashboard.view": "Umumiy ko‘rinish",
+    "projects.view": "Loyihalarni ko‘rish",
+    "projects.manage": "Loyiha qo‘shish va to‘xtatish",
+    "projects.deploy": "Loyihalarni deploy / yangilash",
+    "projects.import": "Render xizmatlarini import qilish",
+    "servers.view": "Server monitoring",
+    "team.view": "Jamoa ro‘yxatini ko‘rish",
+    "audit.view": "Xavfsizlik va audit jurnali",
+    "ai.view": "Sun’iy intellekt holati",
+    "backup.create": "Zaxira nusxasini olish",
+    "backup.restore": "Zaxiradan tiklash"
+}
+LEGACY_PERMISSIONS = {
+    "admin": {"dashboard.view", "projects.view", "projects.manage", "projects.import", "servers.view", "audit.view"},
+    "operator": {"dashboard.view", "projects.view", "servers.view"},
+    "viewer": {"dashboard.view", "projects.view", "servers.view"}
+}
+def get_permissions(user: User):
+    if user.role == "owner":
+        return set(PERMISSION_LABELS)
+    if user.role == "helper":
+        try:
+            stored = json.loads(user.permissions or "{}")
+            return {p for p in stored if p in PERMISSION_LABELS} if isinstance(stored, list) else set()
+        except Exception:
+            return set()
+    return set(LEGACY_PERMISSIONS.get(user.role, set()))
+def has_permission(user: User, permission: str):
+    return user.role == "owner" or permission in get_permissions(user)
+def permission_dep(permission: str):
+    def check(user: User = Depends(user_dep)):
+        if not has_permission(user, permission):
+            raise HTTPException(403, "Super Admin bu bo‘lim uchun ruxsat bermagan")
         return user
     return check
 
@@ -152,6 +192,7 @@ a{{color:inherit;text-decoration:none}}button,input,select,textarea{{font:inheri
 </style></head><body>{body}<nav class="mobilebar"><a href="/"><b>◈</b>Asosiy</a><a href="/#loyihalar"><b>▦</b>Loyihalar</a><a href="/#serverlar"><b>◉</b>Serverlar</a><a href="/#jamoa"><b>♙</b>Jamoa</a><a href="/#jurnal"><b>▤</b>Jurnal</a></nav></body></html>"""
 
 def dashboard_html(request: Request, user: User, db: Session):
+    can = lambda permission: has_permission(user, permission)
     projects = db.query(Project).order_by(Project.created_at.desc()).all()
     logs = db.query(Audit).order_by(Audit.created_at.desc()).limit(12).all()
     users = db.query(User).order_by(User.created_at.desc()).all()
@@ -160,9 +201,9 @@ def dashboard_html(request: Request, user: User, db: Session):
         status_class = "" if p.active else "off"
         status_text = "FAOL" if p.active else "PAUZA"
         toggle_text = "To‘xtatish" if p.active else "Faollashtirish"
-        deploy_btn = f'<form method="post" action="/projects/{p.id}/deploy"><button class="btn small">Yangilash ↗</button></form>' if user.role == "owner" and p.render_service_id else ""
+        deploy_btn = f'<form method="post" action="/projects/{p.id}/deploy"><button class="btn small">Yangilash ↗</button></form>' if can("projects.deploy") and p.render_service_id else ""
         project_cards.append(
-            f'<article class="project"><div class="projecttop"><div><div class="projectname">{esc(p.name)}</div><div class="kind">{esc(p.kind.upper())} · ID #{p.id}</div></div><span class="status {status_class}">{status_text}</span></div><div class="projectmeta">GitHub: {esc(p.repo_url or "ulanmagan")}<br>Manzil: {esc(p.service_url or "kiritilmagan")}<br>Render ID: {esc(p.render_service_id or "kiritilmagan")}</div><div class="actions"><button class="btn secondary small" onclick="checkProject({p.id},this)">Holatini tekshirish</button><form method="post" action="/projects/{p.id}/toggle"><button class="btn secondary small">{toggle_text}</button></form>{deploy_btn}</div></article>'
+            f'<article class="project"><div class="projecttop"><div><div class="projectname">{esc(p.name)}</div><div class="kind">{esc(p.kind.upper())} · ID #{p.id}</div></div><span class="status {status_class}">{status_text}</span></div><div class="projectmeta">GitHub: {esc(p.repo_url or "ulanmagan")}<br>Manzil: {esc(p.service_url or "kiritilmagan")}<br>Render ID: {esc(p.render_service_id or "kiritilmagan")}</div><div class="actions">{f'<button class="btn secondary small" onclick="checkProject({p.id},this)">Holatini tekshirish</button>' if can("projects.view") else ''}{f'<form method="post" action="/projects/{p.id}/toggle"><button class="btn secondary small">{toggle_text}</button></form>' if can("projects.manage") else ''}{deploy_btn}</div></article>'
         )
     project_cards_html = "".join(project_cards) or '<div class="empty">Hali loyiha ulanmagan. Birinchi loyihangizni qo‘shing.</div>'
     body = f"""
@@ -234,7 +275,7 @@ def logout(request: Request, db: Session = Depends(db_dep)):
 @app.post("/projects/add")
 def add_project(request: Request, name: str = Form(...), kind: str = Form("web"), repo_url: str = Form(""),
                 service_url: str = Form(""), render_service_id: str = Form(""), notes: str = Form(""),
-                user: User = Depends(role_dep("owner", "admin")), db: Session = Depends(db_dep)):
+                user: User = Depends(permission_dep("projects.manage")), db: Session = Depends(db_dep)):
     verify_origin(request)
     if not name.strip(): raise HTTPException(400, "Loyiha nomi kiritilsin")
     for url in (repo_url, service_url):
@@ -246,7 +287,7 @@ def add_project(request: Request, name: str = Form(...), kind: str = Form("web")
     return RedirectResponse("/#loyihalar", status_code=303)
 
 @app.post("/projects/{pid}/toggle")
-def toggle_project(pid: int, request: Request, user: User = Depends(role_dep("owner", "admin")), db: Session = Depends(db_dep)):
+def toggle_project(pid: int, request: Request, user: User = Depends(permission_dep("projects.manage")), db: Session = Depends(db_dep)):
     verify_origin(request)
     p = db.get(Project, pid)
     if not p: raise HTTPException(404, "Loyiha topilmadi")
@@ -255,7 +296,7 @@ def toggle_project(pid: int, request: Request, user: User = Depends(role_dep("ow
     return RedirectResponse("/#loyihalar", status_code=303)
 
 @app.get("/projects/{pid}/health")
-async def project_health(pid: int, user: User = Depends(user_dep), db: Session = Depends(db_dep)):
+async def project_health(pid: int, user: User = Depends(permission_dep("projects.view")), db: Session = Depends(db_dep)):
     p = db.get(Project, pid)
     if not p: raise HTTPException(404, "Loyiha topilmadi")
     if not p.service_url: return {"status": "manzil_kiritilmagan"}
@@ -267,7 +308,7 @@ async def project_health(pid: int, user: User = Depends(user_dep), db: Session =
     except Exception: return {"status": "javob_yoq"}
 
 @app.post("/projects/{pid}/deploy")
-async def deploy(pid: int, request: Request, user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+async def deploy(pid: int, request: Request, user: User = Depends(permission_dep("projects.deploy")), db: Session = Depends(db_dep)):
     verify_origin(request)
     p = db.get(Project, pid)
     if not p: raise HTTPException(404, "Loyiha topilmadi")
@@ -293,7 +334,7 @@ def team_add(request: Request, username: str = Form(...), password: str = Form(.
     return RedirectResponse("/#jamoa", status_code=303)
 
 @app.post("/api/render/import")
-async def import_render(request: Request, user: User = Depends(role_dep("owner", "admin")), db: Session = Depends(db_dep)):
+async def import_render(request: Request, user: User = Depends(permission_dep("projects.import")), db: Session = Depends(db_dep)):
     verify_origin(request)
     key = os.getenv("RENDER_API_KEY", "")
     if not key: raise HTTPException(400, "Render API kaliti sozlanmagan")
@@ -320,20 +361,20 @@ async def import_render(request: Request, user: User = Depends(role_dep("owner",
     return {"ok": True, "added": added}
 
 @app.get("/api/metrics")
-def metrics(user: User = Depends(user_dep)):
+def metrics(user: User = Depends(permission_dep("servers.view"))):
     try: disk = psutil.disk_usage("/").percent
     except Exception: disk = 0
     return {"cpu": psutil.cpu_percent(interval=0.1), "ram": psutil.virtual_memory().percent,
             "disk": disk, "render_api": bool(os.getenv("RENDER_API_KEY"))}
 
 @app.get("/api/audit")
-def audit_export(user: User = Depends(role_dep("owner", "admin")), db: Session = Depends(db_dep)):
+def audit_export(user: User = Depends(permission_dep("audit.view")), db: Session = Depends(db_dep)):
     rows = db.query(Audit).order_by(Audit.created_at.desc()).limit(1000).all()
     return [{"vaqt": x.created_at.isoformat() if x.created_at else "", "foydalanuvchi": x.actor,
              "amal": x.action, "tafsilot": x.detail, "ip": x.ip} for x in rows]
 
 @app.get("/backup")
-def backup(user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+def backup(user: User = Depends(permission_dep("backup.create")), db: Session = Depends(db_dep)):
     data = {"format": "itkoders-super-admin-backup-v1", "created_at": datetime.now(timezone.utc).isoformat(),
             "projects": [{"name":p.name,"kind":p.kind,"repo_url":p.repo_url,"service_url":p.service_url,
                           "render_service_id":p.render_service_id,"notes":p.notes,"active":p.active} for p in db.query(Project).all()],
@@ -344,7 +385,7 @@ def backup(user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep
         headers={"Content-Disposition": "attachment; filename=itkoders-super-admin-backup.json"})
 
 @app.post("/restore")
-async def restore(request: Request, backup: UploadFile = File(...), user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+async def restore(request: Request, backup: UploadFile = File(...), user: User = Depends(permission_dep("backup.restore")), db: Session = Depends(db_dep)):
     verify_origin(request)
     if backup.content_type not in ("application/json", "application/octet-stream", "text/json"):
         raise HTTPException(400, "JSON zaxira faylini tanlang")
