@@ -187,7 +187,7 @@ a{{color:inherit;text-decoration:none}}button,input,select,textarea{{font:inheri
 .formgrid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}}label{{display:block;color:#aebed4;font-size:11px}}input,select,textarea{{width:100%;margin-top:6px;background:#0a1422;border:1px solid #2b405d;color:#edf4ff;border-radius:10px;padding:11px 12px;outline:none;min-width:0}}input:focus,select:focus,textarea:focus{{border-color:#54cbd2;box-shadow:0 0 0 3px #54cbd21b}}textarea{{min-height:76px;resize:vertical}}.full{{grid-column:1/-1}}.hint{{font-size:10px;color:#7e91ac;margin-top:5px}}.tablewrap{{overflow-x:auto}}table{{border-collapse:collapse;width:100%;min-width:520px}}th,td{{text-align:left;padding:11px 9px;border-bottom:1px solid #26364d;font-size:11px}}th{{color:#8498b5;font-weight:600}}td{{color:#d5e0ef}}.muted{{color:var(--muted)}}.logrow{{padding:10px 0;border-bottom:1px solid #26364d;font-size:11px}}.logrow:last-child{{border:0}}.pill{{display:inline-block;border-radius:30px;padding:3px 8px;background:#1a2c43;color:#b8cbe4;font-size:10px}}.notice{{padding:12px 14px;border:1px solid #34506b;border-radius:12px;background:#13253a;color:#b7cbe4;font-size:11px;margin:14px 0}}.notice.warn{{border-color:#775a32;background:#302719;color:#f4d59b}}.empty{{padding:24px;text-align:center;color:#8193ad;border:1px dashed #2b405a;border-radius:14px;font-size:12px}}
 .mobilebar{{display:none}}.modal{{display:none;position:fixed;inset:0;background:#0009;z-index:20;align-items:center;justify-content:center;padding:16px}}.modal.open{{display:flex}}.modalbox{{width:min(520px,100%);background:#101b2b;border:1px solid #304561;border-radius:18px;padding:20px;max-height:90vh;overflow:auto}}.modalhead{{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}}.x{{border:0;background:#20324b;color:#fff;border-radius:9px;padding:7px 11px}}
 @media(max-width:1050px){{.grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
-@media(max-width:760px){{.app{{display:block}}.side{{display:none}}.main{{padding:18px 14px 100px}}.top{{align-items:flex-start}}.topright{{flex-direction:column;align-items:flex-end}}.who{{display:none}}.cards{{grid-template-columns:1fr}}.grid{{gap:9px}}.stat{{padding:13px;min-height:100px}}.statnum{{font-size:25px}}.formgrid{{grid-template-columns:1fr}}.full{{grid-column:auto}}.mobilebar{{position:fixed;display:flex;bottom:0;left:0;right:0;z-index:10;padding:8px 7px calc(8px + env(safe-area-inset-bottom));background:#0b1424f5;backdrop-filter:blur(16px);border-top:1px solid #263a54;justify-content:space-around}}.mobilebar a{{display:flex;flex-direction:column;align-items:center;gap:2px;color:#8ea2bd;font-size:9px;min-width:48px}}.mobilebar a b{{font-size:17px;font-weight:500}}.mobilebar a:active{{color:var(--gold)}}.top h1{{font-size:24px}}.sectionhead{{align-items:flex-start}}}}
+@media(max-width:760px){{.permgrid{{grid-template-columns:1fr}}.app{{display:block}}.side{{display:none}}.main{{padding:18px 14px 100px}}.top{{align-items:flex-start}}.topright{{flex-direction:column;align-items:flex-end}}.who{{display:none}}.cards{{grid-template-columns:1fr}}.grid{{gap:9px}}.stat{{padding:13px;min-height:100px}}.statnum{{font-size:25px}}.formgrid{{grid-template-columns:1fr}}.full{{grid-column:auto}}.mobilebar{{position:fixed;display:flex;bottom:0;left:0;right:0;z-index:10;padding:8px 7px calc(8px + env(safe-area-inset-bottom));background:#0b1424f5;backdrop-filter:blur(16px);border-top:1px solid #263a54;justify-content:space-around}}.mobilebar a{{display:flex;flex-direction:column;align-items:center;gap:2px;color:#8ea2bd;font-size:9px;min-width:48px}}.mobilebar a b{{font-size:17px;font-weight:500}}.mobilebar a:active{{color:var(--gold)}}.permgrid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 16px}}.permcheck{{display:flex;align-items:center;gap:8px;background:#0d1929;border:1px solid #2a3d57;border-radius:10px;padding:9px;font-size:11px;min-height:42px}}.permcheck input{{width:16px;height:16px;margin:0;accent-color:#e9bd68;flex:none}}.helper-edit{{border-top:1px solid #26364d;padding-top:14px;margin-top:14px}}.top h1{{font-size:24px}}.sectionhead{{align-items:flex-start}}}}
 @media(max-width:380px){{.grid{{grid-template-columns:1fr 1fr}}.statnum{{font-size:22px}}.topright .btn{{font-size:10px;padding:8px}}}}
 </style></head><body>{body}<nav class="mobilebar"><a href="/"><b>◈</b>Asosiy</a><a href="/#loyihalar"><b>▦</b>Loyihalar</a><a href="/#serverlar"><b>◉</b>Serverlar</a><a href="/#jamoa"><b>♙</b>Jamoa</a><a href="/#jurnal"><b>▤</b>Jurnal</a></nav></body></html>"""
 
@@ -206,9 +206,9 @@ def dashboard_html(request: Request, user: User, db: Session):
             f'<article class="project"><div class="projecttop"><div><div class="projectname">{esc(p.name)}</div><div class="kind">{esc(p.kind.upper())} · ID #{p.id}</div></div><span class="status {status_class}">{status_text}</span></div><div class="projectmeta">GitHub: {esc(p.repo_url or "ulanmagan")}<br>Manzil: {esc(p.service_url or "kiritilmagan")}<br>Render ID: {esc(p.render_service_id or "kiritilmagan")}</div><div class="actions">{f'<button class="btn secondary small" onclick="checkProject({p.id},this)">Holatini tekshirish</button>' if can("projects.view") else ''}{f'<form method="post" action="/projects/{p.id}/toggle"><button class="btn secondary small">{toggle_text}</button></form>' if can("projects.manage") else ''}{deploy_btn}</div></article>'
         )
     project_cards_html = "".join(project_cards) or '<div class="empty">Hali loyiha ulanmagan. Birinchi loyihangizni qo‘shing.</div>'
-    project_tools = ('<button class="btn secondary" onclick="importRender()">Renderdan yuklash ↻</button>' if can("projects.import") else '') + ('<button class="btn" onclick="document.getElementById(\\'addmodal\\').classList.add(\\'open\\')">＋ Loyiha ulash</button>' if can("projects.manage") else '')
+    project_tools = ('<button class="btn secondary" onclick="importRender()">Renderdan yuklash ↻</button>' if can("projects.import") else '') + ('<button class="btn" onclick="document.getElementById(\'addmodal\').classList.add(\'open\')">＋ Loyiha ulash</button>' if can("projects.manage") else '')
     projects_section = f"""<section class="section" id="loyihalar"><div class="sectionhead"><div><h2>Loyihalar markazi</h2><p>Saytlar, botlar, ilovalar va API xizmatlari.</p></div><div class="actions">{project_tools}</div></div><div class="cards">{project_cards_html}</div></section>""" if can("projects.view") else ""
-    server_section = """{server_section}""" if can("servers.view") else ""
+    server_section = """<section class="section" id="serverlar"><div class="sectionhead"><div><h2>Server monitoring</h2><p>Ushbu boshqaruv xizmatining o‘z resurslari.</p></div><button class="btn secondary small" onclick="loadMetrics()">Yangilash</button></div><div class="grid"><div class="card"><div class="statlabel">Protsessor</div><div class="statnum" id="cpu">—</div><div class="statfoot">CPU bandligi</div></div><div class="card"><div class="statlabel">Xotira</div><div class="statnum" id="ram">—</div><div class="statfoot">RAM ishlatilishi</div></div><div class="card"><div class="statlabel">Disk</div><div class="statnum" id="disk">—</div><div class="statfoot">Disk bandligi</div></div><div class="card"><div class="statlabel">Render ulanishi</div><div class="statnum" id="render">—</div><div class="statfoot">API kaliti sozlangan bo‘lsa</div></div></div></section>""" if can("servers.view") else ""
     team_section = ""
     if user.role == "owner" or can("team.view"):
         rows = "".join(f'<tr><td>{esc(u.username)}</td><td><span class="pill">{esc("Super Admin" if u.role == "owner" else "Yordamchi admin" if u.role == "helper" else u.role)}</span></td><td>{esc(", ".join(sorted(get_permissions(u))) or "—")}</td><td>{"Faol" if u.active else "Bloklangan"}</td><td>{u.created_at.strftime("%Y-%m-%d") if u.created_at else "—"}</td></tr>' for u in users)
@@ -225,17 +225,17 @@ def dashboard_html(request: Request, user: User, db: Session):
     audit_section = f'<section class="section" id="jurnal"><div class="sectionhead"><div><h2>Xavfsizlik va audit jurnali</h2><p>Kim, qachon va qanday amal bajarganini ko‘ring.</p></div><a class="btn secondary small" href="/api/audit">Jurnalni yuklash</a></div><div class="card">{log_html}</div></section>' if can("audit.view") else ""
     ai_ready = bool(os.getenv("OPENAI_API_KEY"))
     ai_section = f'<section class="section" id="suniy"><div class="sectionhead"><div><h2>Sun’iy intellekt boshqaruvi</h2><p>AI xizmatlari uchun ulanish holati.</p></div></div><div class="card"><div class="projecttop"><div><b>OpenAI API</b><div class="kind">AI integratsiyasi</div></div><span class="status {" " if ai_ready else "off"}">{"KALIT SOZLANGAN" if ai_ready else "KALIT KIRITILMAGAN"}</span></div><p class="sub">AI funksiyalari uchun API kaliti Render maxfiy muhit sozlamalarida saqlanadi.</p></div></section>' if can("ai.view") else ""
-    backup_actions = ('<a class="btn" href="/backup">↓ Zaxira nusxasini olish</a>' if can("backup.create") else '') + ('<button class="btn secondary" onclick="document.getElementById(\\'restoremodal\\').classList.add(\\'open\\')">↑ Zaxiradan tiklash</button>' if can("backup.restore") else '')
+    backup_actions = ('<a class="btn" href="/backup">↓ Zaxira nusxasini olish</a>' if can("backup.create") else '') + ('<button class="btn secondary" onclick="document.getElementById(\'restoremodal\').classList.add(\'open\')">↑ Zaxiradan tiklash</button>' if can("backup.restore") else '')
     backup_section = f'<section class="section" id="zaxira"><div class="sectionhead"><div><h2>Zaxira nusxa va tiklash</h2><p>Loyiha ro‘yxati va audit ma’lumotlarini JSON ko‘rinishida saqlash.</p></div></div><div class="card"><p class="sub">Zaxira nusxada parollar va maxfiy kalitlar bo‘lmaydi. Tiklash loyiha ro‘yxatini almashtiradi.</p><div class="actions">{backup_actions}</div></div></section>' if backup_actions else ""
-    overview_grid = f'{overview_grid}' if can("dashboard.view") else ""
+    overview_grid = f'<div class="grid"><div class="stat"><div class="statlabel">Ro‘yxatdagi loyihalar</div><div class="statnum">{len(projects)}</div><div class="statfoot">Markazga ulangan</div></div><div class="stat"><div class="statlabel">Jamoa a’zolari</div><div class="statnum">{len(users)}</div><div class="statfoot">Boshqaruv huquqlari</div></div><div class="stat"><div class="statlabel">Audit hodisalari</div><div class="statnum">{db.query(Audit).count()}</div><div class="statfoot">Amallar tarixi</div></div><div class="stat"><div class="statlabel">Faol loyihalar</div><div class="statnum">{sum(1 for p in projects if p.active)}</div><div class="statfoot">Nazoratdagi xizmatlar</div></div></div>' if can("dashboard.view") else ""
     body = f"""
 <div class="app"><aside class="side"><div class="brand"><div class="brandmark">✦</div><div><b>ITKODERS</b><small>SUPER ADMIN</small></div></div>
 <div class="navcap">BOSHQARUV</div><a class="nav sel" href="#umumiy"><span>◈</span>Umumiy ko‘rinish</a><a class="nav" href="#loyihalar"><span>▦</span>Loyihalar</a><a class="nav" href="#serverlar"><span>◉</span>Server monitoring</a><a class="nav" href="#jamoa"><span>♙</span>Jamoa va huquqlar</a><div class="navcap">TIZIM</div><a class="nav" href="#jurnal"><span>⬡</span>Xavfsizlik va jurnal</a><a class="nav" href="#suniy"><span>✧</span>Sun’iy intellekt</a><a class="nav" href="#zaxira"><span>▤</span>Zaxira nusxa</a><div class="sidefoot">Himoyalangan boshqaruv markazi<br>Versiya 1.0 · O‘zbekcha</div></aside>
 <main class="main"><header class="top" id="umumiy"><div><div class="eyebrow">MARKAZIY BOSHQARUV · ITKODERS</div><h1>Salom, {user.username} 👋</h1><div class="sub">Barcha loyihalaringiz holati bitta joyda.</div></div><div class="topright"><span class="who">{user.role.upper()} · Xavfsiz sessiya</span><form method="post" action="/logout"><button class="logout">Chiqish ↗</button></form></div></header>
-<div class="grid"><div class="stat"><div class="statlabel">Ro‘yxatdagi loyihalar</div><div class="statnum">{len(projects)}</div><div class="statfoot">Markazga ulangan</div></div><div class="stat"><div class="statlabel">Jamoa a’zolari</div><div class="statnum">{len(users)}</div><div class="statfoot">Boshqaruv huquqlari</div></div><div class="stat"><div class="statlabel">Audit hodisalari</div><div class="statnum">{db.query(Audit).count()}</div><div class="statfoot">Amallar tarixi</div></div><div class="stat"><div class="statlabel">Faol loyihalar</div><div class="statnum">{sum(1 for p in projects if p.active)}</div><div class="statfoot">Nazoratdagi xizmatlar</div></div></div>
+{overview_grid}
 <div class="notice">✦ <b>Yagona boshqaruv.</b> Yangi loyiha qo‘shish uchun «Loyiha ulash» tugmasidan foydalaning. Har bir loyiha alohida API orqali ulanadi.</div>
 {projects_section}
-<section class="section" id="serverlar"><div class="sectionhead"><div><h2>Server monitoring</h2><p>Ushbu boshqaruv xizmatining o‘z resurslari.</p></div><button class="btn secondary small" onclick="loadMetrics()">Yangilash</button></div><div class="grid"><div class="card"><div class="statlabel">Protsessor</div><div class="statnum" id="cpu">—</div><div class="statfoot">CPU bandligi</div></div><div class="card"><div class="statlabel">Xotira</div><div class="statnum" id="ram">—</div><div class="statfoot">RAM ishlatilishi</div></div><div class="card"><div class="statlabel">Disk</div><div class="statnum" id="disk">—</div><div class="statfoot">Disk bandligi</div></div><div class="card"><div class="statlabel">Render ulanishi</div><div class="statnum" id="render">—</div><div class="statfoot">API kaliti sozlangan bo‘lsa</div></div></div></section>
+{server_section}
 {team_section}
 {audit_section}
 {ai_section}
@@ -344,14 +344,38 @@ async def deploy(pid: int, request: Request, user: User = Depends(permission_dep
     return RedirectResponse("/#loyihalar", status_code=303)
 
 @app.post("/team/add")
-def team_add(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form(...),
-             user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+def team_add(request: Request, username: str = Form(...), password: str = Form(...),
+             permissions: list[str] = Form([]), user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
     verify_origin(request)
+    username = username.strip()
+    if len(username) < 3 or len(username) > 80: raise HTTPException(400, "Login 3–80 belgidan iborat bo‘lsin")
     if len(password) < 16: raise HTTPException(400, "Parol kamida 16 belgidan iborat bo‘lsin")
-    if role not in ("admin", "operator", "viewer"): raise HTTPException(400, "Huquq darajasi noto‘g‘ri")
-    if db.query(User).filter_by(username=username.strip()).first(): raise HTTPException(409, "Bu login band")
-    db.add(User(username=username.strip(), password_hash=hash_password(password), role=role))
-    db.commit(); audit(db, user.username, "jamoa_azosi_qoshildi", f"{username} / {role}", request)
+    if db.query(User).filter_by(username=username).first(): raise HTTPException(409, "Bu login band")
+    allowed = sorted({p for p in permissions if p in PERMISSION_LABELS})
+    db.add(User(username=username, password_hash=hash_password(password), role="helper",
+                permissions=json.dumps(allowed, ensure_ascii=False)))
+    db.commit(); audit(db, user.username, "yordamchi_admin_qoshildi", f"{username}: {', '.join(allowed) or 'ruxsat berilmadi'}", request)
+    return RedirectResponse("/#jamoa", status_code=303)
+
+@app.post("/team/{uid}/permissions")
+def team_permissions(uid: int, request: Request, permissions: list[str] = Form([]),
+                     user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+    verify_origin(request)
+    target = db.get(User, uid)
+    if not target or target.role != "helper": raise HTTPException(404, "Yordamchi admin topilmadi")
+    allowed = sorted({p for p in permissions if p in PERMISSION_LABELS})
+    target.permissions = json.dumps(allowed, ensure_ascii=False)
+    db.commit(); audit(db, user.username, "yordamchi_ruxsatlari_yangilandi", f"{target.username}: {', '.join(allowed) or 'ruxsat yo‘q'}", request)
+    return RedirectResponse("/#jamoa", status_code=303)
+
+@app.post("/team/{uid}/toggle")
+def team_toggle(uid: int, request: Request, user: User = Depends(role_dep("owner")), db: Session = Depends(db_dep)):
+    verify_origin(request)
+    target = db.get(User, uid)
+    if not target or target.role != "helper" or target.id == user.id:
+        raise HTTPException(404, "Yordamchi admin topilmadi")
+    target.active = not target.active
+    db.commit(); audit(db, user.username, "yordamchi_hisobi_holati", f"{target.username}: {'faol' if target.active else 'bloklandi'}", request)
     return RedirectResponse("/#jamoa", status_code=303)
 
 @app.post("/api/render/import")
